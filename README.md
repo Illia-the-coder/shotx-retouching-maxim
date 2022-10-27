@@ -1,10 +1,10 @@
 ---
-title: Fivek Retouching Maxim
-emoji: 😻
-colorFrom: green
-colorTo: yellow
+title: FiveK Retouching MAXIM
+emoji: 💻
+colorFrom: magenta
+colorTo: magenta
 sdk: gradio
-sdk_version: 3.7
+sdk_version: 3.5
 app_file: app.py
 pinned: false
 license: apache-2.0
