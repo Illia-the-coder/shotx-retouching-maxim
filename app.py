@@ -12,8 +12,8 @@ from create_maxim_model import Model
 from maxim.configs import MAXIM_CONFIGS
 
 CKPT = "google/maxim-s2-enhancement-fivek"
-VARIANT = CKPT.split("/")[-1].split("_")[0]
-VARIANT = VARIANT[0].upper() + VARIANT[1]
+VARIANT = CKPT.split("/")[-1].split("-")[1]
+VARIANT = VARIANT[0].upper() + "-" + VARIANT[1]
 _MODEL = from_pretrained_keras(CKPT)
 
 
