@@ -11,8 +11,9 @@ from PIL import Image
 from create_maxim_model import Model
 from maxim.configs import MAXIM_CONFIGS
 
-CKPT = "sayakpaul/S-2_enhancement_fivek"
+CKPT = "google/maxim-s2-enhancement-fivek"
 VARIANT = CKPT.split("/")[-1].split("_")[0]
+VARIANT = VARIANT.upper()
 _MODEL = from_pretrained_keras(CKPT)
 
 
