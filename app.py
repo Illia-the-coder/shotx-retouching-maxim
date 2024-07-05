@@ -1,12 +1,19 @@
+import os
+import logging
 import gradio as gr
 import numpy as np
 import tensorflow as tf
-from huggingface_hub.keras_mixin import from_pretrained_keras
+from huggingface_hub import from_pretrained_keras
 from PIL import Image
 import argparse
 
 from create_maxim_model import Model
 from maxim.configs import MAXIM_CONFIGS
+
+# Suppress TensorFlow logging
+logging.disable(logging.WARNING)
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.get_logger().setLevel('ERROR')
 
 # Define a dictionary to map model numbers to model paths
 MODEL_PATHS = {
