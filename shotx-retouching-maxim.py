@@ -105,4 +105,4 @@ iface = gr.Interface(
     allow_flagging="never",
     examples=[["1.png"], ["111.png"], ["748.png"], ["a4541-DSC_0040-2.png"]],
 )
-iface.launch(debug=True)
+iface.launch(debug=True, share=True)
