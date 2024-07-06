@@ -1,40 +1,21 @@
-import os
-import logging
+"""
+Some preprocessing utilities have been taken from:
+https://github.com/google-research/maxim/blob/main/maxim/run_eval.py
+"""
 import gradio as gr
 import numpy as np
 import tensorflow as tf
-from huggingface_hub import from_pretrained_keras
+from huggingface_hub.keras_mixin import from_pretrained_keras
 from PIL import Image
-import argparse
 
 from create_maxim_model import Model
 from maxim.configs import MAXIM_CONFIGS
 
-# Suppress TensorFlow logging
-logging.disable(logging.WARNING)
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.get_logger().setLevel('ERROR')
-
-# Define a dictionary to map model numbers to model paths
-MODEL_PATHS = {
-    1: "google/maxim-s2-enhancement-fivek",           # Enhancement
-    2: "google/maxim-s2-deraining-rain13k",           # Deraining
-    3: "google/maxim-s2-dehazing-sots-outdoor",       # Dehazing
-    4: "google/maxim-s3-denoising-sidd",              # Denoising
-    5: "google/maxim-s3-deblurring-gopro",            # Deblurring (General)
-    6: "google/maxim-s3-deblurring-realblur-r"        # Deblurring (Specific)
-}
-
-# Parse command-line arguments
-parser = argparse.ArgumentParser(description="Image retouching with MAXIM model.")
-parser.add_argument('--model', type=int, choices=range(1, 7), required=True, help="Model number to use (1-6)")
-args = parser.parse_args()
-
-# Get the checkpoint path based on the model number
-CKPT = MODEL_PATHS[args.model]
+CKPT = "google/maxim-s2-enhancement-fivek"
 VARIANT = CKPT.split("/")[-1].split("-")[1]
 VARIANT = VARIANT[0].upper() + "-" + VARIANT[1]
 _MODEL = from_pretrained_keras(CKPT)
+
 
 def mod_padding_symmetric(image, factor=64):
     """Padding the image to be divided by factor."""
@@ -49,6 +30,7 @@ def mod_padding_symmetric(image, factor=64):
     )
     return image
 
+
 def make_shape_even(image):
     """Pad the image to have even shapes."""
     height, width = image.shape[0], image.shape[1]
@@ -56,6 +38,7 @@ def make_shape_even(image):
     padw = 1 if width % 2 != 0 else 0
     image = tf.pad(image, [(0, padh), (0, padw), (0, 0)], mode="REFLECT")
     return image
+
 
 def process_image(image: Image):
     input_img = np.asarray(image) / 255.0
@@ -69,6 +52,7 @@ def process_image(image: Image):
     input_img = mod_padding_symmetric(input_img, factor=64)
     input_img = tf.expand_dims(input_img, axis=0)
     return input_img, height, width, height_even, width_even
+
 
 def init_new_model(input_img):
     configs = MAXIM_CONFIGS.get(VARIANT)
@@ -85,6 +69,7 @@ def init_new_model(input_img):
     new_model = Model(**configs)
     new_model.set_weights(_MODEL.get_weights())
     return new_model
+
 
 def infer(image):
     preprocessed_image, height, width, height_even, width_even = process_image(image)
@@ -107,16 +92,17 @@ def infer(image):
 
     return Image.fromarray(np.array((np.clip(preds, 0.0, 1.0) * 255.0).astype(np.uint8)))
 
-title = "Retouch images."
-description = f"The underlying model is [this](https://huggingface.co/{CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Note that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
+
+title = CKPT
+# description = f"The underlying model is [this](https://huggingface.co/{CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Not that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
 
 iface = gr.Interface(
     infer,
     inputs="image",
-    outputs=gr.Image(),
+    outputs=gr.Image().style(height=242),
     title=title,
-    description=description,
+    # description=description,
     allow_flagging="never",
     examples=[["1.png"], ["111.png"], ["748.png"], ["a4541-DSC_0040-2.png"]],
 )
-iface.launch(debug=True, share=True)
+iface.launch(debug=True)
