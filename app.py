@@ -21,7 +21,7 @@ MODEL_PATHS = {
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Image retouching with MAXIM model.")
-parser.add_argument('--model', type=int, choices=range(1, 7), required=True, help="Model number to use (1-6)")
+parser.add_argument('--model', type=int, choices=range(1, 8), required=True, help="Model number to use (1-7)")
 args = parser.parse_args()
 # Get the checkpoint path based on the model number
 CKPT = MODEL_PATHS[args.model]
