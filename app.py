@@ -12,10 +12,10 @@ from maxim.configs import MAXIM_CONFIGS
 MODEL_PATHS = {
     1: "google/maxim-s3-denoising-sidd",
     2: "google/maxim-s2-low-light",
-    3: "google/maxim-s2-image-retouching",
+    3: "google/maxim-s2-enhancement-fivek",
     4: "google/maxim-s2-dehazing-sots-indoor",
     5: "google/maxim-s2-dehazing-sots-outdoor",
-    6: "google/maxim-s2-deraining",
+    6: "google/maxim-s2-deraining-raindrop",
     7: "google/maxim-s3-deblurring-realblur-r"
 }
 
