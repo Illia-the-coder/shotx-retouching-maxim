@@ -10,13 +10,15 @@ from maxim.configs import MAXIM_CONFIGS
 
 # Define a dictionary to map model numbers to model paths
 MODEL_PATHS = {
-    1: "google/maxim-s2-enhancement-fivek",           # Enhancement
-    2: "google/maxim-s2-deraining-rain13k",           # Deraining
-    3: "google/maxim-s2-dehazing-sots-outdoor",       # Dehazing
-    4: "google/maxim-s3-denoising-sidd",              # Denoising
-    5: "google/maxim-s3-deblurring-gopro",            # Deblurring (General)
-    6: "google/maxim-s3-deblurring-realblur-r"        # Deblurring (Specific)
+    1: "google/maxim-s3-denoising-sidd",
+    2: "google/maxim-s2-low-light",
+    3: "google/maxim-s2-image-retouching",
+    4: "google/maxim-s2-dehazing-sots-indoor",
+    5: "google/maxim-s2-dehazing-sots-outdoor",
+    6: "google/maxim-s2-deraining",
+    7: "google/maxim-s3-deblurring-realblur-r"
 }
+
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Image retouching with MAXIM model.")
 parser.add_argument('--model', type=int, choices=range(1, 7), required=True, help="Model number to use (1-6)")
@@ -87,7 +89,7 @@ def infer(image):
     preds = preds[h_start:h_end, w_start:w_end, :]
     return Image.fromarray(np.array((np.clip(preds, 0.0, 1.0) * 255.0).astype(np.uint8)))
 title = CKPT
-description = f"The underlying model is [this](https://huggingface.co/{CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Note that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
+description = f"The underlying model is [this]({CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Note that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
 iface = gr.Interface(
     infer,
     inputs="image",
