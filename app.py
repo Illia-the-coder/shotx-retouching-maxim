@@ -1,22 +1,31 @@
-"""
-Some preprocessing utilities have been taken from:
-https://github.com/google-research/maxim/blob/main/maxim/run_eval.py
-"""
 import gradio as gr
 import numpy as np
 import tensorflow as tf
 from huggingface_hub.keras_mixin import from_pretrained_keras
 from PIL import Image
+import argparse
 
 from create_maxim_model import Model
 from maxim.configs import MAXIM_CONFIGS
 
-CKPT = "google/maxim-s2-enhancement-fivek"
+# Define a dictionary to map model numbers to model paths
+MODEL_PATHS = {
+    1: "google/maxim-s2-enhancement-fivek",           # Enhancement
+    2: "google/maxim-s2-deraining-rain13k",           # Deraining
+    3: "google/maxim-s2-dehazing-sots-outdoor",       # Dehazing
+    4: "google/maxim-s3-denoising-sidd",              # Denoising
+    5: "google/maxim-s3-deblurring-gopro",            # Deblurring (General)
+    6: "google/maxim-s3-deblurring-realblur-r"        # Deblurring (Specific)
+}
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Image retouching with MAXIM model.")
+parser.add_argument('--model', type=int, choices=range(1, 7), required=True, help="Model number to use (1-6)")
+args = parser.parse_args()
+# Get the checkpoint path based on the model number
+CKPT = MODEL_PATHS[args.model]
 VARIANT = CKPT.split("/")[-1].split("-")[1]
 VARIANT = VARIANT[0].upper() + "-" + VARIANT[1]
 _MODEL = from_pretrained_keras(CKPT)
-
-
 def mod_padding_symmetric(image, factor=64):
     """Padding the image to be divided by factor."""
     height, width = image.shape[0], image.shape[1]
@@ -29,8 +38,6 @@ def mod_padding_symmetric(image, factor=64):
         image, [(padh // 2, padh // 2), (padw // 2, padw // 2), (0, 0)], mode="REFLECT"
     )
     return image
-
-
 def make_shape_even(image):
     """Pad the image to have even shapes."""
     height, width = image.shape[0], image.shape[1]
@@ -38,22 +45,16 @@ def make_shape_even(image):
     padw = 1 if width % 2 != 0 else 0
     image = tf.pad(image, [(0, padh), (0, padw), (0, 0)], mode="REFLECT")
     return image
-
-
 def process_image(image: Image):
     input_img = np.asarray(image) / 255.0
     height, width = input_img.shape[0], input_img.shape[1]
-
     # Padding images to have even shapes
     input_img = make_shape_even(input_img)
     height_even, width_even = input_img.shape[0], input_img.shape[1]
-
     # padding images to be multiplies of 64
     input_img = mod_padding_symmetric(input_img, factor=64)
     input_img = tf.expand_dims(input_img, axis=0)
     return input_img, height, width, height_even, width_even
-
-
 def init_new_model(input_img):
     configs = MAXIM_CONFIGS.get(VARIANT)
     configs.update(
@@ -69,40 +70,31 @@ def init_new_model(input_img):
     new_model = Model(**configs)
     new_model.set_weights(_MODEL.get_weights())
     return new_model
-
-
 def infer(image):
     preprocessed_image, height, width, height_even, width_even = process_image(image)
     new_model = init_new_model(preprocessed_image)
-
     preds = new_model.predict(preprocessed_image)
     if isinstance(preds, list):
         preds = preds[-1]
         if isinstance(preds, list):
             preds = preds[-1]
-
     preds = np.array(preds[0], np.float32)
-
     new_height, new_width = preds.shape[0], preds.shape[1]
     h_start = new_height // 2 - height_even // 2
     h_end = h_start + height
     w_start = new_width // 2 - width_even // 2
     w_end = w_start + width
     preds = preds[h_start:h_end, w_start:w_end, :]
-
     return Image.fromarray(np.array((np.clip(preds, 0.0, 1.0) * 255.0).astype(np.uint8)))
-
-
 title = CKPT
-# description = f"The underlying model is [this](https://huggingface.co/{CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Not that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
-
+description = f"The underlying model is [this](https://huggingface.co/{CKPT}). You can use the model for image retouching useful for image editing applications. To quickly try out the model, you can choose from the available sample images below, or you can submit your own image. Note that, internally, the model is re-initialized based on the spatial dimensions of the input image and this process is time-consuming."
 iface = gr.Interface(
     infer,
     inputs="image",
-    outputs=gr.Image().style(height=242),
+    outputs=gr.Image(),
     title=title,
-    # description=description,
+    description=description,
     allow_flagging="never",
     examples=[["1.png"], ["111.png"], ["748.png"], ["a4541-DSC_0040-2.png"]],
 )
-iface.launch(debug=True)
+iface.launch(debug=True, share=True)
